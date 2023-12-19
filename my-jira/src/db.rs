@@ -1,16 +1,16 @@
 use std::fs;
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
 use crate::models::{DBState, Epic, Story, Status};
 
 pub struct JiraDatabase {
-    database: Box<dyn Database>
+    pub database: Box<dyn Database>
 }
 
 impl JiraDatabase {
     pub fn new(file_path: String) -> Self {
-        JiraDatabase {
+        Self {
             database: Box::new(JSONFileDatabase { file_path })
         }
     }
@@ -21,27 +21,27 @@ impl JiraDatabase {
     
     pub fn create_epic(&self, epic: Epic) -> Result<u32> {
         let mut parsed = self.database.read_db()?;
-
+    
         let last_id = parsed.last_item_id;
         let new_id = last_id + 1;
-
+        
         parsed.last_item_id = new_id;
         parsed.epics.insert(new_id, epic);
-
+    
         self.database.write_db(&parsed)?;
         Ok(new_id)
     }
     
     pub fn create_story(&self, story: Story, epic_id: u32) -> Result<u32> {
         let mut parsed = self.database.read_db()?;
-
+    
         let last_id = parsed.last_item_id;
         let new_id = last_id + 1;
-
+        
         parsed.last_item_id = new_id;
         parsed.stories.insert(new_id, story);
         parsed.epics.get_mut(&epic_id).ok_or_else(|| anyhow!("could not find epic in database!"))?.stories.push(new_id);
-
+    
         self.database.write_db(&parsed)?;
         Ok(new_id)
     }
@@ -92,7 +92,7 @@ impl JiraDatabase {
     }
 }
 
-trait Database {
+pub trait Database {
     fn read_db(&self) -> Result<DBState>;
     fn write_db(&self, db_state: &DBState) -> Result<()>;
 }
